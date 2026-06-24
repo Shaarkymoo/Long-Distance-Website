@@ -1,0 +1,12 @@
+{
+  "name": "couple-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "deploy": "gcloud run deploy couple-website --source . --region us-central1 --allow-unauthenticated"
+  }
+}
