@@ -61,7 +61,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use(express.static('../client/dist'));
+app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+// SPA fallback — serve index.html for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
