@@ -168,6 +168,10 @@ cython_debug/
 .omo/specs/2026-06-23-ai-conversationalist-design.md
 atlas-credentials.env
 
+# node_modules (committed by mistake, now excluded)
+node_modules/
+**/node_modules/
+
 # graphify knowledge graph outputs (regenerated on commit)
 graphify-out/
 !graphify-out/.gitkeep
