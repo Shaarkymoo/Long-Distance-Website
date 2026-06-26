@@ -167,3 +167,7 @@ cython_debug/
 .omo/run-continuation/ses_119cc0eeaffescClonmslKCWJg.json
 .omo/specs/2026-06-23-ai-conversationalist-design.md
 atlas-credentials.env
+
+# graphify knowledge graph outputs (regenerated on commit)
+graphify-out/
+!graphify-out/.gitkeep
