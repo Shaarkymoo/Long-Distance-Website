@@ -21,6 +21,7 @@
   import Books from './pages/Books.svelte';
   import AiAdventures from './pages/AiAdventures.svelte';
   import Whiteboard from './pages/Whiteboard.svelte';
+  import PageHelp from './components/PageHelp.svelte';
 
   let currentPage = 'home';
   const pageMap = { home: Home, notebook: Notebook, light: Light, movies: Movies, messages: Messages, conversations: Conversations, challenges: Challenges, predictions: Predictions, quizzes: Quizzes, games: Games, trivia: Trivia, guess: GuessObject, puzzles: DailyPuzzles, music: Music, books: Books, whiteboard: Whiteboard, 'ai-adventures': AiAdventures, 'ai-adventures/new': AiAdventures };
@@ -83,7 +84,8 @@
         <button class="logout-btn" on:click={handleLogout}>Logout</button>
       </div>
     </header>
-    <main class="content">
+    <main class="content" style="position: relative;">
+      <PageHelp page={currentPage} />
       <svelte:component this={pageMap[currentPage]} />
     </main>
   </div>
