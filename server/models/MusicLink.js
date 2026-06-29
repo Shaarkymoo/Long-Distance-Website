@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const musicLinkSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   title: { type: String },
   url: { type: String },
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

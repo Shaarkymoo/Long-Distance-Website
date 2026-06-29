@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const gameSchema = new mongoose.Schema({
+  coupleId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   name:        { type: String, required: true },
   slug:        { type: String, required: true, unique: true },
   description: { type: String, default: '' },

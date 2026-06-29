@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const conversationPromptSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   promptText: { type: String },
   used: { type: Boolean, default: false },
   isCurrent: { type: Boolean, default: false },

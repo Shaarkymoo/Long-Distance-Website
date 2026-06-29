@@ -7,6 +7,7 @@ const messageEntrySchema = new mongoose.Schema({
 }, { _id: false });
 
 const aiAdventureSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   title: { type: String, default: '' },
   persona: { type: String, required: true },
   environment: { type: String, required: true },

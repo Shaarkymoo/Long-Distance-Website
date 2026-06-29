@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const predictions = await Prediction.find()
+    const predictions = await Prediction.find({ coupleId: req.user.coupleId })
       .sort({ createdAt: -1 })
       .populate('predictedBy', 'username displayName');
     res.json({ predictions });
@@ -23,7 +23,8 @@ router.post('/', authMiddleware, async (req, res) => {
     }
     const prediction = await Prediction.create({
       title: title.trim(),
-      predictedBy: req.user.id
+      predictedBy: req.user.id,
+      coupleId: req.user.coupleId
     });
     const populated = await prediction.populate('predictedBy', 'username displayName');
     res.status(201).json({ prediction: populated });
@@ -38,8 +39,8 @@ router.patch('/:id/resolve', authMiddleware, async (req, res) => {
     if (!['correct', 'wrong'].includes(result)) {
       return res.status(400).json({ error: 'Result must be "correct" or "wrong"' });
     }
-    const prediction = await Prediction.findByIdAndUpdate(
-      req.params.id,
+    const prediction = await Prediction.findOneAndUpdate(
+      { _id: req.params.id, coupleId: req.user.coupleId },
       { result, resolvedAt: new Date() },
       { new: true }
     ).populate('predictedBy', 'username displayName');

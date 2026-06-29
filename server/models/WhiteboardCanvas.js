@@ -12,6 +12,7 @@ const strokeSchema = new mongoose.Schema({
 }, { _id: false });
 
 const whiteboardCanvasSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   strokes: { type: [strokeSchema], default: [] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

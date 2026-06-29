@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/whiteboard — get current canvas strokes
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const canvas = await WhiteboardCanvas.findOne().sort({ updatedAt: -1 });
+    const canvas = await WhiteboardCanvas.findOne({ coupleId: req.user.coupleId }).sort({ updatedAt: -1 });
     res.json({ strokes: canvas?.strokes || [] });
   } catch (err) {
     console.error('Get whiteboard error:', err);
@@ -21,9 +21,9 @@ router.put('/', authMiddleware, async (req, res) => {
     const { strokes } = req.body;
     if (!Array.isArray(strokes)) return res.status(400).json({ error: 'Strokes must be an array' });
 
-    let canvas = await WhiteboardCanvas.findOne().sort({ updatedAt: -1 });
+    let canvas = await WhiteboardCanvas.findOne({ coupleId: req.user.coupleId }).sort({ updatedAt: -1 });
     if (!canvas) {
-      canvas = new WhiteboardCanvas();
+      canvas = new WhiteboardCanvas({ coupleId: req.user.coupleId });
     }
     canvas.strokes = strokes;
     canvas.updatedAt = new Date();
@@ -38,9 +38,9 @@ router.put('/', authMiddleware, async (req, res) => {
 // POST /api/whiteboard/clear — clear the canvas
 router.post('/clear', authMiddleware, async (req, res) => {
   try {
-    let canvas = await WhiteboardCanvas.findOne().sort({ updatedAt: -1 });
+    let canvas = await WhiteboardCanvas.findOne({ coupleId: req.user.coupleId }).sort({ updatedAt: -1 });
     if (!canvas) {
-      canvas = new WhiteboardCanvas();
+      canvas = new WhiteboardCanvas({ coupleId: req.user.coupleId });
     }
     canvas.strokes = [];
     canvas.updatedAt = new Date();

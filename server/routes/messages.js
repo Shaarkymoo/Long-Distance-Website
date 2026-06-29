@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const messages = await Message.find()
+    const messages = await Message.find({ coupleId: req.user.coupleId })
       .sort({ createdAt: -1 })
       .populate('author', 'username displayName');
     res.json({ messages });
@@ -23,7 +23,8 @@ router.post('/', authMiddleware, async (req, res) => {
     }
     const message = await Message.create({
       content: content.trim(),
-      author: req.user.id
+      author: req.user.id,
+      coupleId: req.user.coupleId
     });
     const populated = await message.populate('author', 'username displayName');
     res.status(201).json({ message: populated });

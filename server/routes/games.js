@@ -10,7 +10,7 @@ const router = Router();
 // GET /api/games — list all user-added games
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const games = await Game.find().sort({ createdAt: -1 });
+    const games = await Game.find({ coupleId: req.user.coupleId }).sort({ createdAt: -1 });
     res.json({ games });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -29,7 +29,7 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!slug) slug = 'game';
 
     // Ensure unique slug
-    const existing = await Game.findOne({ slug });
+    const existing = await Game.findOne({ slug, coupleId: req.user.coupleId });
     if (existing) {
       const count = await Game.countDocuments({ slug: new RegExp('^' + slug) });
       slug = slug + '-' + (count + 1);
@@ -43,6 +43,7 @@ router.post('/', authMiddleware, async (req, res) => {
       tag: (tag || 'other').trim().toLowerCase(),
       players: (players || '2+').trim(),
       addedBy: req.user.id,
+      coupleId: req.user.coupleId,
     });
 
     res.status(201).json({ game });
@@ -55,7 +56,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // DELETE /api/games/:slug — delete a game (either user can delete)
 router.delete('/:slug', authMiddleware, async (req, res) => {
   try {
-    const game = await Game.findOneAndDelete({ slug: req.params.slug });
+    const game = await Game.findOneAndDelete({ slug: req.params.slug, coupleId: req.user.coupleId });
     if (!game) return res.status(404).json({ error: 'Game not found' });
     res.json({ message: 'Deleted' });
   } catch (err) {
@@ -68,7 +69,7 @@ router.delete('/:slug', authMiddleware, async (req, res) => {
 // GET /api/games/favorites — get current user's favorites
 router.get('/favorites', authMiddleware, async (req, res) => {
   try {
-    const favorites = await FavoriteGame.find({ userId: req.user.id });
+    const favorites = await FavoriteGame.find({ userId: req.user.id, coupleId: req.user.coupleId });
     res.json({ favorites: favorites.map(f => f.gameSlug) });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -81,13 +82,13 @@ router.post('/favorites', authMiddleware, async (req, res) => {
     const { gameSlug } = req.body;
     if (!gameSlug) return res.status(400).json({ error: 'gameSlug is required' });
 
-    const existing = await FavoriteGame.findOne({ userId: req.user.id, gameSlug });
+    const existing = await FavoriteGame.findOne({ userId: req.user.id, gameSlug, coupleId: req.user.coupleId });
     if (existing) {
       await existing.deleteOne();
       return res.json({ favorited: false, gameSlug });
     }
 
-    await FavoriteGame.create({ userId: req.user.id, gameSlug });
+    await FavoriteGame.create({ userId: req.user.id, gameSlug, coupleId: req.user.coupleId });
     res.json({ favorited: true, gameSlug });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

@@ -13,7 +13,7 @@ const router = Router();
 router.get('/current', authMiddleware, async (req, res) => {
   try {
     const [current, users] = await Promise.all([
-      ConversationPrompt.findOne({ isCurrent: true }),
+      ConversationPrompt.findOne({ isCurrent: true, coupleId: req.user.coupleId }),
       User.find({}).select('username displayName'),
     ]);
     res.json({
@@ -34,7 +34,7 @@ router.get('/random', authMiddleware, async (req, res) => {
 
     // Find a new unused prompt
     const prompt = await ConversationPrompt.findOneAndUpdate(
-      { used: false },
+      { used: false, coupleId: req.user.coupleId },
       { used: true, isCurrent: true, thoughts: {} },
       { new: true }
     );
@@ -62,7 +62,7 @@ router.post('/thoughts', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Thoughts text is required' });
     }
 
-    const current = await ConversationPrompt.findOne({ isCurrent: true });
+    const current = await ConversationPrompt.findOne({ isCurrent: true, coupleId: req.user.coupleId });
     if (!current) {
       return res.status(404).json({ error: 'No active topic. Get a prompt first.' });
     }

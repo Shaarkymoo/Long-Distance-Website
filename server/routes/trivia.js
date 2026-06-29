@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/trivia/questions — list questions with per-user status
 router.get('/questions', authMiddleware, async (req, res) => {
   try {
-    const questions = await TriviaQuestion.find()
+    const questions = await TriviaQuestion.find({ coupleId: req.user.coupleId })
       .sort({ createdAt: -1 })
       .populate('createdBy', 'username displayName')
       .populate('answeredBy.userId', 'username displayName');
@@ -53,7 +53,8 @@ router.post('/questions', authMiddleware, async (req, res) => {
       correctAnswer,
       category: category || 'general',
       createdBy: req.user.id,
-      answeredBy: []
+      answeredBy: [],
+      coupleId: req.user.coupleId
     });
     res.status(201).json({ question: q });
   } catch (err) {
@@ -68,7 +69,7 @@ router.post('/questions/:id/answer', authMiddleware, async (req, res) => {
     const { answer } = req.body;
     if (!answer) return res.status(400).json({ error: 'Answer is required' });
 
-    const question = await TriviaQuestion.findById(req.params.id);
+    const question = await TriviaQuestion.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!question) return res.status(404).json({ error: 'Question not found' });
 
     const alreadyAnswered = question.answeredBy.find(a => a.userId.toString() === req.user.id);
@@ -88,7 +89,7 @@ router.post('/questions/:id/answer', authMiddleware, async (req, res) => {
 // GET /api/trivia/leaderboard — show correct counts per user
 router.get('/leaderboard', authMiddleware, async (req, res) => {
   try {
-    const questions = await TriviaQuestion.find().populate('answeredBy.userId', 'username displayName');
+    const questions = await TriviaQuestion.find({ coupleId: req.user.coupleId }).populate('answeredBy.userId', 'username displayName');
     const counts = {};
 
     questions.forEach(q => {

@@ -14,6 +14,10 @@
     { page: 'light', label: 'Light', icon: '💡' },
     { page: 'ai-adventures', label: 'AI Adventures', icon: '🤖' },
     { page: 'whiteboard', label: 'Whiteboard', icon: '🖍️' },
+    { page: 'pet', label: 'Pet', icon: '🐾' },
+    { page: 'archive', label: 'Archive', icon: '📦' },
+    { page: 'ripple', label: 'Ripple', icon: '🌊' },
+    { page: 'expeditions', label: 'Expeditions', icon: '🗺️' },
   ];
 
   function navigate(page) {

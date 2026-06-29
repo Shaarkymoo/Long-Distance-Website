@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/quizzes — list quizzes with status for current user
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const quizzes = await PersonalityQuiz.find().sort({ createdAt: -1 });
+    const quizzes = await PersonalityQuiz.find({ coupleId: req.user.coupleId }).sort({ createdAt: -1 });
     const result = quizzes.map(q => {
       const qObj = q.toObject();
       const answers = qObj.answers || {};
@@ -51,7 +51,8 @@ router.post('/', authMiddleware, async (req, res) => {
     const quiz = await PersonalityQuiz.create({
       quizName: quizName.trim(),
       questions,
-      answers: {}
+      answers: {},
+      coupleId: req.user.coupleId
     });
     res.status(201).json({ quiz });
   } catch (err) {
@@ -63,7 +64,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // GET /api/quizzes/:id — get quiz with current user's answers hidden from other user
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const quiz = await PersonalityQuiz.findById(req.params.id);
+    const quiz = await PersonalityQuiz.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
     const qObj = quiz.toObject();
@@ -96,7 +97,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post('/:id/answer', authMiddleware, async (req, res) => {
   try {
     const { responses } = req.body;
-    const quiz = await PersonalityQuiz.findById(req.params.id);
+    const quiz = await PersonalityQuiz.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
     if (!responses || !Array.isArray(responses)) {
@@ -123,7 +124,7 @@ router.post('/:id/answer', authMiddleware, async (req, res) => {
 // GET /api/quizzes/:id/compare — show both users' answers side by side
 router.get('/:id/compare', authMiddleware, async (req, res) => {
   try {
-    const quiz = await PersonalityQuiz.findById(req.params.id);
+    const quiz = await PersonalityQuiz.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
     const qObj = quiz.toObject();

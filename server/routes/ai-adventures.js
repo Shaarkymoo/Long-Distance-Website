@@ -12,6 +12,7 @@ router.use(authMiddleware);
 router.get('/', async (req, res) => {
   try {
     const adventures = await AiAdventure.find({
+      coupleId: req.user.coupleId,
       $or: [{ user1: req.user.id }, { user2: req.user.id }]
     })
       .populate('user1', 'username displayName')
@@ -43,6 +44,7 @@ router.post('/', async (req, res) => {
       user1Profile: user1Profile || '',
       user2Profile: user2Profile || '',
       maxRounds: maxRounds || 30,
+      coupleId: req.user.coupleId,
     });
 
     await adventure.populate('user1', 'username displayName');
@@ -58,7 +60,7 @@ router.post('/', async (req, res) => {
 // GET /api/ai-adventures/:id — get full adventure
 router.get('/:id', async (req, res) => {
   try {
-    const adventure = await AiAdventure.findById(req.params.id)
+    const adventure = await AiAdventure.findOne({ _id: req.params.id, coupleId: req.user.coupleId })
       .populate('user1', 'username displayName')
       .populate('user2', 'username displayName');
     if (!adventure) return res.status(404).json({ error: 'Adventure not found' });
@@ -78,7 +80,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/ai-adventures/:id/act — send a message
 router.post('/:id/act', async (req, res) => {
   try {
-    const adventure = await AiAdventure.findById(req.params.id)
+    const adventure = await AiAdventure.findOne({ _id: req.params.id, coupleId: req.user.coupleId })
       .populate('user1', 'username displayName')
       .populate('user2', 'username displayName');
     if (!adventure) return res.status(404).json({ error: 'Adventure not found' });
@@ -150,7 +152,7 @@ router.post('/:id/act', async (req, res) => {
 // POST /api/ai-adventures/:id/end — conclude adventure
 router.post('/:id/end', async (req, res) => {
   try {
-    const adventure = await AiAdventure.findById(req.params.id)
+    const adventure = await AiAdventure.findOne({ _id: req.params.id, coupleId: req.user.coupleId })
       .populate('user1', 'username displayName')
       .populate('user2', 'username displayName');
     if (!adventure) return res.status(404).json({ error: 'Adventure not found' });
@@ -182,9 +184,9 @@ router.post('/:id/end', async (req, res) => {
 // DELETE /api/ai-adventures/:id — delete adventure
 router.delete('/:id', async (req, res) => {
   try {
-    const adventure = await AiAdventure.findById(req.params.id);
+    const adventure = await AiAdventure.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!adventure) return res.status(404).json({ error: 'Adventure not found' });
-    await AiAdventure.findByIdAndDelete(req.params.id);
+    await AiAdventure.deleteOne({ _id: req.params.id, coupleId: req.user.coupleId });
     res.json({ message: 'Adventure deleted' });
   } catch (err) {
     console.error('Delete adventure error:', err);

@@ -7,9 +7,9 @@ const router = Router();
 // GET /api/notebook — get the shared notebook content
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    let notebook = await Notebook.findOne();
+    let notebook = await Notebook.findOne({ coupleId: req.user.coupleId });
     if (!notebook) {
-      notebook = await Notebook.create({ content: '' });
+      notebook = await Notebook.create({ content: '', coupleId: req.user.coupleId });
     }
     res.json({ content: notebook.content, updatedAt: notebook.updatedAt });
   } catch (err) {
@@ -26,9 +26,9 @@ router.put('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    let notebook = await Notebook.findOne();
+    let notebook = await Notebook.findOne({ coupleId: req.user.coupleId });
     if (!notebook) {
-      notebook = new Notebook();
+      notebook = new Notebook({ coupleId: req.user.coupleId });
     }
 
     notebook.content = content;

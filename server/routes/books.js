@@ -37,12 +37,12 @@ function getBucket() {
 // GET /api/books — get current book metadata + both users' progress
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const book = await Book.findOne().sort({ uploadedAt: -1 });
+    const book = await Book.findOne({ coupleId: req.user.coupleId }).sort({ uploadedAt: -1 });
     if (!book) return res.json({ book: null });
 
     const [progress, counterpartProgress] = await Promise.all([
-      ReadingProgress.findOne({ bookId: book._id, userId: req.user.id }),
-      ReadingProgress.findOne({ bookId: book._id, userId: { $ne: req.user.id } }),
+      ReadingProgress.findOne({ bookId: book._id, userId: req.user.id, coupleId: req.user.coupleId }),
+      ReadingProgress.findOne({ bookId: book._id, userId: { $ne: req.user.id }, coupleId: req.user.coupleId }),
     ]);
 
     let counterpart = null;
@@ -77,7 +77,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // GET /api/books/page/:num — get page content (0-indexed)
 router.get('/page/:num', authMiddleware, async (req, res) => {
   try {
-    const book = await Book.findOne().sort({ uploadedAt: -1 });
+    const book = await Book.findOne({ coupleId: req.user.coupleId }).sort({ uploadedAt: -1 });
     if (!book) return res.status(404).json({ error: 'No book uploaded' });
 
     const pageNum = parseInt(req.params.num, 10);
@@ -85,7 +85,7 @@ router.get('/page/:num', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: `Page must be 0–${book.totalPages - 1}` });
     }
 
-    const page = await BookPage.findOne({ bookId: book._id, pageNumber: pageNum });
+    const page = await BookPage.findOne({ bookId: book._id, pageNumber: pageNum, coupleId: req.user.coupleId });
     if (!page) return res.status(404).json({ error: 'Page not found' });
 
     res.json({ content: page.content, pageNumber: pageNum, totalPages: book.totalPages });
@@ -98,10 +98,10 @@ router.get('/page/:num', authMiddleware, async (req, res) => {
 // GET /api/books/progress — get user's reading progress
 router.get('/progress', authMiddleware, async (req, res) => {
   try {
-    const book = await Book.findOne().sort({ uploadedAt: -1 });
+    const book = await Book.findOne({ coupleId: req.user.coupleId }).sort({ uploadedAt: -1 });
     if (!book) return res.json({ currentPage: 0 });
 
-    const progress = await ReadingProgress.findOne({ bookId: book._id, userId: req.user.id });
+    const progress = await ReadingProgress.findOne({ bookId: book._id, userId: req.user.id, coupleId: req.user.coupleId });
     res.json({ currentPage: progress?.currentPage ?? 0 });
   } catch (err) {
     console.error('Get progress error:', err);
@@ -113,7 +113,7 @@ router.get('/progress', authMiddleware, async (req, res) => {
 router.put('/progress', authMiddleware, async (req, res) => {
   try {
     const { currentPage } = req.body;
-    const book = await Book.findOne().sort({ uploadedAt: -1 });
+    const book = await Book.findOne({ coupleId: req.user.coupleId }).sort({ uploadedAt: -1 });
     if (!book) return res.status(404).json({ error: 'No book uploaded' });
 
     if (currentPage === undefined || currentPage < 0 || currentPage >= book.totalPages) {
@@ -121,7 +121,7 @@ router.put('/progress', authMiddleware, async (req, res) => {
     }
 
     const progress = await ReadingProgress.findOneAndUpdate(
-      { bookId: book._id, userId: req.user.id },
+      { bookId: book._id, userId: req.user.id, coupleId: req.user.coupleId },
       { $set: { currentPage, updatedAt: new Date() } },
       { upsert: true, new: true }
     );
@@ -141,7 +141,7 @@ router.post('/upload', authMiddleware, upload.single('epub'), async (req, res) =
     tmpPath = req.file.path;
 
     // Check: only one book allowed
-    const existing = await Book.findOne();
+    const existing = await Book.findOne({ coupleId: req.user.coupleId });
     if (existing) {
       await fs.unlink(tmpPath).catch(() => {});
       return res.status(400).json({ error: 'A book already exists. Delete it first before uploading a new one.' });
@@ -172,6 +172,7 @@ router.post('/upload', authMiddleware, upload.single('epub'), async (req, res) =
       totalPages: pages.length,
       uploadedBy: req.user.id,
       gridfsId: fileId,
+      coupleId: req.user.coupleId,
     });
 
     // Batch insert pages
@@ -179,6 +180,7 @@ router.post('/upload', authMiddleware, upload.single('epub'), async (req, res) =
       bookId: book._id,
       pageNumber: i,
       content,
+      coupleId: req.user.coupleId,
     }));
     await BookPage.insertMany(pageDocs);
 
@@ -187,6 +189,7 @@ router.post('/upload', authMiddleware, upload.single('epub'), async (req, res) =
       bookId: book._id,
       userId: req.user.id,
       currentPage: 0,
+      coupleId: req.user.coupleId,
     });
 
     // Clean up temp file
@@ -211,16 +214,16 @@ router.post('/upload', authMiddleware, upload.single('epub'), async (req, res) =
 // DELETE /api/books — delete the book, all pages, progress, and GridFS file
 router.delete('/', authMiddleware, async (req, res) => {
   try {
-    const book = await Book.findOne().sort({ uploadedAt: -1 });
+    const book = await Book.findOne({ coupleId: req.user.coupleId }).sort({ uploadedAt: -1 });
     if (!book) return res.status(404).json({ error: 'No book to delete' });
 
     const bookId = book._id;
 
     // Delete pages
-    await BookPage.deleteMany({ bookId });
+    await BookPage.deleteMany({ bookId, coupleId: req.user.coupleId });
 
     // Delete all reading progress for this book
-    await ReadingProgress.deleteMany({ bookId });
+    await ReadingProgress.deleteMany({ bookId, coupleId: req.user.coupleId });
 
     // Delete GridFS file
     if (book.gridfsId) {
@@ -229,7 +232,7 @@ router.delete('/', authMiddleware, async (req, res) => {
     }
 
     // Delete book record
-    await Book.findByIdAndDelete(bookId);
+    await Book.findOneAndDelete({ _id: bookId, coupleId: req.user.coupleId });
 
     res.json({ message: 'Book deleted' });
   } catch (err) {

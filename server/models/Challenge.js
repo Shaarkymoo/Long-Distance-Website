@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const challengeSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   challengeText: { type: String },
   category: { type: String, enum: ['fun', 'adventurous', 'romantic', 'silly'] },
   used: { type: Boolean, default: false },

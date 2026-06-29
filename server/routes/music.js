@@ -34,7 +34,7 @@ const router = Router();
 // GET /api/music — list all music links
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const music = await MusicLink.find()
+    const music = await MusicLink.find({ coupleId: req.user.coupleId })
       .sort({ createdAt: -1 })
       .populate('addedBy', 'username displayName');
     res.json({ music });
@@ -61,7 +61,8 @@ router.post('/', authMiddleware, async (req, res) => {
       title: title.trim(),
       url: url.trim(),
       embedType: parsed.type,
-      addedBy: req.user.id
+      addedBy: req.user.id,
+      coupleId: req.user.coupleId
     });
     const populated = await music.populate('addedBy', 'username displayName');
     res.status(201).json({ music: populated });
@@ -76,7 +77,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const music = await MusicLink.findOneAndDelete({
       _id: req.params.id,
-      addedBy: req.user.id
+      addedBy: req.user.id,
+      coupleId: req.user.coupleId
     });
     if (!music) return res.status(404).json({ error: 'Not found or not yours' });
     res.json({ message: 'Deleted' });

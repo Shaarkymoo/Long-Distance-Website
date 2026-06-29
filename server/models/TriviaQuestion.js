@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const triviaQuestionSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   question: { type: String },
   options: [{ type: String }],
   correctAnswer: { type: String },

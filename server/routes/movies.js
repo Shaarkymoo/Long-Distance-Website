@@ -8,7 +8,7 @@ const router = Router();
 // GET /api/movies — list all movies, sorted by status
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const movies = await Movie.find()
+    const movies = await Movie.find({ coupleId: req.user.coupleId })
       .sort({ createdAt: -1 })
       .populate('suggestedBy', 'username displayName');
     res.json({ movies });
@@ -30,7 +30,8 @@ router.post('/', authMiddleware, async (req, res) => {
       title: title.trim(),
       suggestedBy: req.user.id,
       link: link || '',
-      notes: notes || ''
+      notes: notes || '',
+      coupleId: req.user.coupleId
     });
 
     const populated = await movie.populate('suggestedBy', 'username displayName');
@@ -44,7 +45,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // PATCH /api/movies/:id/mark-watched — mark movie as watched by current user
 router.patch('/:id/mark-watched', authMiddleware, async (req, res) => {
   try {
-    const movie = await Movie.findById(req.params.id);
+    const movie = await Movie.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!movie) return res.status(404).json({ error: 'Movie not found' });
 
     const userId = req.user.id;
@@ -77,7 +78,7 @@ router.patch('/:id/mark-watched', authMiddleware, async (req, res) => {
 router.get('/debt', authMiddleware, async (req, res) => {
   try {
     const users = await User.find({});
-    const movies = await Movie.find({});
+    const movies = await Movie.find({ coupleId: req.user.coupleId });
 
     const watchCounts = {};
     for (const user of users) {

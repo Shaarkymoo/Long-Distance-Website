@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Couple from '../models/Couple.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -42,14 +43,19 @@ router.post('/setup', async (req, res) => {
       return res.status(400).json({ error: `Username "${existing.username}" already exists` });
     }
 
+    const couple = await Couple.create({
+      name: `${username1.trim()} & ${username2.trim()}`,
+    });
+
     const users = await User.insertMany([
-      { username: username1.trim(), password: password, displayName: username1.trim() },
-      { username: username2.trim(), password: password, displayName: username2.trim() },
+      { username: username1.trim(), password: password, displayName: username1.trim(), coupleId: couple._id },
+      { username: username2.trim(), password: password, displayName: username2.trim(), coupleId: couple._id },
     ]);
 
     res.json({
       message: 'Accounts created',
-      users: users.map(u => ({ id: u._id, username: u.username, displayName: u.displayName }))
+      users: users.map(u => ({ id: u._id, username: u.username, displayName: u.displayName })),
+      coupleId: couple._id,
     });
   } catch (err) {
     console.error('Setup error:', err);
@@ -76,14 +82,14 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, username: user.username, displayName: user.displayName },
+      { id: user._id, username: user.username, displayName: user.displayName, coupleId: user.coupleId },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.json({
       token,
-      user: { id: user._id, username: user.username, displayName: user.displayName }
+      user: { id: user._id, username: user.username, displayName: user.displayName, coupleId: user.coupleId }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -94,9 +100,9 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me — return current user from JWT
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('username displayName');
+    const user = await User.findById(req.user.id).select('username displayName coupleId');
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user: { id: user._id, username: user.username, displayName: user.displayName } });
+    res.json({ user: { id: user._id, username: user.username, displayName: user.displayName, coupleId: user.coupleId } });
   } catch (err) {
     console.error('Me error:', err);
     res.status(500).json({ error: 'Server error' });

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const dailyPuzzleSchema = new mongoose.Schema({
+  coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
   date: { type: String },
   title: { type: String },
   link: { type: String },

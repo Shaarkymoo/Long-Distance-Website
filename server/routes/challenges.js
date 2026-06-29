@@ -30,7 +30,7 @@ const DEFAULT_CHALLENGES = [
 router.get('/random', authMiddleware, async (req, res) => {
   try {
     const challenge = await Challenge.findOneAndUpdate(
-      { used: false },
+      { used: false, coupleId: req.user.coupleId },
       { used: true },
       { sort: { _id: 1 }, new: true }
     );
@@ -51,7 +51,8 @@ router.post('/', authMiddleware, async (req, res) => {
     }
     const challenge = await Challenge.create({
       challengeText: challengeText.trim(),
-      category: category || 'fun'
+      category: category || 'fun',
+      coupleId: req.user.coupleId
     });
     res.status(201).json({ challenge });
   } catch (err) {
@@ -61,7 +62,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.get('/reset', authMiddleware, async (req, res) => {
   try {
-    await Challenge.updateMany({}, { used: false });
+    await Challenge.updateMany({ coupleId: req.user.coupleId }, { used: false });
     res.json({ message: 'All challenges reset' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

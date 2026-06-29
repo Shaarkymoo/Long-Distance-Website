@@ -26,6 +26,9 @@ import notebookRoutes from './routes/notebook.js';
 import gamesRoutes from './routes/games.js';
 import wledRoutes from './routes/wled.js';
 import aiAdventureRoutes from './routes/ai-adventures.js';
+import petRoutes from './routes/pet.js';
+import rippleRoutes from './routes/ripple.js';
+import expeditionRoutes from './routes/expeditions.js';
 import { setupWhiteboardWs } from './whiteboardWs.js';
 
 import User from './models/User.js';
@@ -56,6 +59,9 @@ app.use('/api/ai-adventures', aiAdventureRoutes);
 app.use('/api/notebook', notebookRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/wled', wledRoutes);
+app.use('/api/pet', petRoutes);
+app.use('/api/ripple', rippleRoutes);
+app.use('/api/expeditions', expeditionRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

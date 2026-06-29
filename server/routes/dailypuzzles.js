@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/dailypuzzles — list puzzles for recent dates (last 7 days)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const puzzles = await DailyPuzzle.find().sort({ date: -1, createdAt: -1 });
+    const puzzles = await DailyPuzzle.find({ coupleId: req.user.coupleId }).sort({ date: -1, createdAt: -1 });
     // Group by date
     const grouped = {};
     puzzles.forEach(p => {
@@ -40,7 +40,8 @@ router.post('/', authMiddleware, async (req, res) => {
       link: link.trim(),
       puzzleType: puzzleType || 'other',
       date: date || new Date().toISOString().split('T')[0],
-      completedBy: []
+      completedBy: [],
+      coupleId: req.user.coupleId
     });
     res.status(201).json({ puzzle });
   } catch (err) {
@@ -52,7 +53,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // PATCH /api/dailypuzzles/:id/complete — toggle completion for current user
 router.patch('/:id/complete', authMiddleware, async (req, res) => {
   try {
-    const puzzle = await DailyPuzzle.findById(req.params.id);
+    const puzzle = await DailyPuzzle.findOne({ _id: req.params.id, coupleId: req.user.coupleId });
     if (!puzzle) return res.status(404).json({ error: 'Puzzle not found' });
 
     const userIdStr = req.user.id;
