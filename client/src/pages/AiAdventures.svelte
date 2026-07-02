@@ -30,6 +30,7 @@
   let sending = false;
   let chatContainer = null;
   let pollTimer = null;
+  let showDetails = false;
 
   $: myId = $currentUser?.id;
 
@@ -45,6 +46,17 @@
     myRole === 'user1'
       ? (adventure.user2?.displayName || adventure.user2?.username || 'Partner')
       : (adventure.user1?.displayName || adventure.user1?.username || 'Partner')
+  ) : '';
+  $: myName = adventure ? (
+    myRole === 'user1'
+      ? (adventure.user1?.displayName || adventure.user1?.username || 'Me')
+      : (adventure.user2?.displayName || adventure.user2?.username || 'Me')
+  ) : '';
+  $: myProfile = adventure ? (
+    myRole === 'user1' ? (adventure.user1Profile || '—') : (adventure.user2Profile || '—')
+  ) : '';
+  $: partnerProfile = adventure ? (
+    myRole === 'user1' ? (adventure.user2Profile || '—') : (adventure.user1Profile || '—')
   ) : '';
 
   onMount(async () => {
@@ -323,11 +335,16 @@
       <div class="room-header">
         <button class="btn-back" on:click={() => navigate('ai-adventures')}>← Back</button>
         <h2>{adventure?.title || 'Adventure'}</h2>
-        {#if adventure?.status === 'active'}
-          <button class="btn-end" on:click={endAdventure}>End Adventure</button>
-        {:else}
-          <button class="btn-del" on:click={deleteAdventure}>Delete</button>
-        {/if}
+        <div class="header-actions">
+          <button class="btn-info" on:click={() => showDetails = !showDetails} title="Adventure details">
+            {showDetails ? '✕' : 'ℹ️'}
+          </button>
+          {#if adventure?.status === 'active'}
+            <button class="btn-end" on:click={endAdventure}>End Adventure</button>
+          {:else}
+            <button class="btn-del" on:click={deleteAdventure}>Delete</button>
+          {/if}
+        </div>
       </div>
 
       <div class="chat-log" bind:this={chatContainer}>
@@ -347,6 +364,56 @@
           <p class="status-msg">Loading adventure...</p>
         {/if}
       </div>
+
+      <!-- Details sidebar overlay -->
+      {#if showDetails && adventure}
+        <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+        <div class="details-overlay" on:click={() => showDetails = false} on:keydown={(e) => e.key === 'Escape' && (showDetails = false)}></div>
+        <aside class="details-panel">
+          <div class="details-header">
+            <h3>Adventure Details</h3>
+            <button class="btn-close-details" on:click={() => showDetails = false}>✕</button>
+          </div>
+          <div class="details-body">
+            <div class="detail-section">
+              <span class="detail-label">Title</span>
+              <span class="detail-value">{adventure.title || 'Untitled'}</span>
+            </div>
+            <div class="detail-section">
+              <span class="detail-label">Status</span>
+              <span class="detail-value status-badge" class:active={adventure.status === 'active'} class:concluded={adventure.status === 'concluded'}>
+                {adventure.status === 'active' ? 'Active' : 'Concluded'}
+              </span>
+            </div>
+            <div class="detail-section">
+              <span class="detail-label">Progress</span>
+              <span class="detail-value">Round {adventure.currentRound} / {adventure.maxRounds}</span>
+            </div>
+
+            <hr class="detail-divider">
+
+            <div class="detail-section">
+              <span class="detail-label">AI Persona</span>
+              <p class="detail-text">{adventure.persona}</p>
+            </div>
+            <div class="detail-section">
+              <span class="detail-label">Environment</span>
+              <p class="detail-text">{adventure.environment}</p>
+            </div>
+
+            <hr class="detail-divider">
+
+            <div class="detail-section">
+              <span class="detail-label">Character — {myName}</span>
+              <p class="detail-text">{myProfile}</p>
+            </div>
+            <div class="detail-section">
+              <span class="detail-label">Character — {partnerName}</span>
+              <p class="detail-text">{partnerProfile}</p>
+            </div>
+          </div>
+        </aside>
+      {/if}
 
       {#if adventure?.status === 'active'}
         <div class="input-area">
@@ -569,6 +636,7 @@
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-surface);
     flex-shrink: 0;
+    gap: 12px;
   }
 
   .room-header h2 {
@@ -576,6 +644,32 @@
     font-size: 1.1rem;
     text-align: center;
     flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn-info {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .btn-info:hover {
+    background: var(--bg-elevated);
+    border-color: var(--text-secondary);
   }
 
   .chat-log {
@@ -798,4 +892,126 @@
   }
   .btn-send:hover { background: var(--accent-hover); }
   .btn-send:disabled { background: var(--text-secondary); cursor: not-allowed; }
+
+  /* --- Details panel --- */
+  .details-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+
+  .details-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: 90vw;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-color);
+    z-index: 11;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideIn 200ms ease-out;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .details-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .btn-close-details {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .btn-close-details:hover {
+    color: var(--text-primary);
+  }
+
+  .details-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detail-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .detail-value {
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+
+  .detail-text {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    background: var(--bg-card);
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    width: fit-content;
+  }
+  .status-badge.active {
+    background: #1b5e20;
+    color: #a5d6a7;
+  }
+  .status-badge.concluded {
+    background: #37474f;
+    color: #90a4ae;
+  }
+
+  .detail-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 4px 0;
+  }
 </style>

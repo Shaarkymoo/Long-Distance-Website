@@ -132,7 +132,21 @@ router.post('/:id/act', async (req, res) => {
     });
 
     if (result.error) {
-      return res.status(502).json({ error: result.error });
+      console.error('[AiAdventures] Gemini error:', result.error);
+      // Map known errors to user-friendly messages
+      let message;
+      if (result.error.includes('GEMINI_API_KEY not set')) {
+        message = 'AI service is not configured. The GEMINI_API_KEY environment variable is missing.';
+      } else if (result.error.includes('Network error')) {
+        message = 'Could not reach the AI service. Please check your internet connection.';
+      } else if (result.error.includes('API key')) {
+        message = 'The AI service API key is invalid or expired.';
+      } else if (result.error.includes('SAFETY') || result.error.includes('blocked')) {
+        message = 'The AI response was blocked by safety filters. Try rephrasing your message.';
+      } else {
+        message = 'The AI service returned an error. Please try again later.';
+      }
+      return res.status(502).json({ error: message });
     }
 
     // Append AI response

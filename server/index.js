@@ -7,7 +7,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 import authRoutes from './routes/auth.js';
 import moviesRoutes from './routes/movies.js';
@@ -32,8 +32,6 @@ import expeditionRoutes from './routes/expeditions.js';
 import { setupWhiteboardWs } from './whiteboardWs.js';
 
 import User from './models/User.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
