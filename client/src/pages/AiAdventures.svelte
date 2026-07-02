@@ -61,6 +61,7 @@
         }
       }
     } catch (e) {
+      console.error('[AiAdventures] Failed to load users:', e);
       // fallback: just the current user
       users = [];
     }
@@ -104,6 +105,7 @@
       const data = await api.get('/ai-adventures');
       adventures = data.adventures;
     } catch (e) {
+      console.error('[AiAdventures] Failed to load adventures:', e);
       error = 'Failed to load adventures';
     }
     loading = false;
@@ -130,6 +132,7 @@
       const data = await api.post('/ai-adventures', form);
       navigate('ai-adventures/' + data.adventure._id);
     } catch (e) {
+      console.error('[AiAdventures] Failed to create adventure:', e);
       formError = e.error || 'Failed to create adventure';
     }
     creating = false;
@@ -141,6 +144,7 @@
       const data = await api.get('/ai-adventures/' + id);
       adventure = data.adventure;
     } catch (e) {
+      console.error('[AiAdventures] Failed to load adventure:', e);
       error = 'Failed to load adventure';
     }
   }
@@ -160,6 +164,7 @@
           }
         }
       } catch (e) {
+        console.error('[AiAdventures] Poll error:', e);
         // ignore poll errors
       }
     }, 3000);
@@ -175,6 +180,7 @@
       adventure = data.adventure;
       setTimeout(scrollToBottom, 200);
     } catch (e) {
+      console.error('[AiAdventures] Failed to send message:', e);
       error = e.error || 'Failed to send message';
     }
     sending = false;
@@ -186,6 +192,7 @@
       const data = await api.post('/ai-adventures/' + currentAdventureId + '/end');
       adventure = data.adventure;
     } catch (e) {
+      console.error('[AiAdventures] Failed to end adventure:', e);
       error = e.error || 'Failed to end adventure';
     }
   }
@@ -197,6 +204,7 @@
       if (pollTimer) clearInterval(pollTimer);
       navigate('ai-adventures');
     } catch (e) {
+      console.error('[AiAdventures] Failed to delete adventure:', e);
       error = e.error || 'Failed to delete adventure';
     }
   }

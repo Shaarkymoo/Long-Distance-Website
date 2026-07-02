@@ -18,7 +18,7 @@
         wledBrightness = data.brightness || 100;
         mode = 'wled';
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Light] check WLED status failed:', e); }
     checking = false;
   });
 
@@ -32,6 +32,7 @@
       }
     } catch (e) {
       mode = 'simulation';
+      console.error('[Light] toggleWled failed:', e);
     }
   }
 
@@ -41,7 +42,7 @@
       if (data.available !== false) {
         wledOn = true;
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Light] turnOn failed:', e); }
   }
 
   async function turnOff() {
@@ -50,7 +51,7 @@
       if (data.available !== false) {
         wledOn = false;
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Light] turnOff failed:', e); }
   }
 
   function switchMode(m) {

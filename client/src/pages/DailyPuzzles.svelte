@@ -31,7 +31,7 @@
       const data = await api.get('/dailypuzzles');
       puzzlesByDate = data.puzzles || {};
       dates = Object.keys(puzzlesByDate).sort().reverse();
-    } catch (e) {}
+    } catch (e) { console.error('[DailyPuzzles] loadPuzzles failed:', e); }
     loading = false;
   }
 
@@ -48,14 +48,14 @@
       newDate = today();
       showCreate = false;
       await loadPuzzles();
-    } catch (e) {}
+    } catch (e) { console.error('[DailyPuzzles] addPuzzle failed:', e); }
   }
 
   async function toggleComplete(puzzleId) {
     try {
       await api.patch(`/dailypuzzles/${puzzleId}/complete`);
       await loadPuzzles();
-    } catch (e) {}
+    } catch (e) { console.error('[DailyPuzzles] toggleComplete failed:', e); }
   }
 
   function isCompletedByMe(puzzle) {

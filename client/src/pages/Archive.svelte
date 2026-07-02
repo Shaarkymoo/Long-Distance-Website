@@ -16,6 +16,7 @@
       const data = await api.get('/pet/archive');
       entries = data.entries ?? [];
     } catch (e) {
+      console.error('[Archive] Failed to load archive:', e);
       error = e.message || 'Failed to load archive';
     }
     loading = false;

@@ -26,26 +26,34 @@ router.get('/current', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/conversations/random — fetch a new unused prompt and make it current
+// GET /api/conversations/random — pick a random prompt from the full pool
 router.get('/random', authMiddleware, async (req, res) => {
   try {
-    // Deactivate any existing current prompt
-    await ConversationPrompt.updateMany({ isCurrent: true }, { isCurrent: false });
+    // Deactivate any existing current prompt for this couple
+    await ConversationPrompt.updateMany(
+      { isCurrent: true, coupleId: req.user.coupleId },
+      { isCurrent: false }
+    );
 
-    // Find a new unused prompt
-    const prompt = await ConversationPrompt.findOneAndUpdate(
-      { used: false, coupleId: req.user.coupleId },
-      { used: true, isCurrent: true, thoughts: {} },
+    // Pick a random prompt from the entire pool using $sample
+    const [prompt] = await ConversationPrompt.aggregate([
+      { $sample: { size: 1 } }
+    ]);
+
+    if (!prompt) {
+      return res.json({ prompt: null, message: 'No prompts available' });
+    }
+
+    // Mark it as current for this couple
+    const activated = await ConversationPrompt.findByIdAndUpdate(
+      prompt._id,
+      { coupleId: req.user.coupleId, isCurrent: true, thoughts: {} },
       { new: true }
     );
 
-    if (!prompt) {
-      return res.json({ prompt: null, message: 'All prompts used!' });
-    }
-
     const users = await User.find({}).select('username displayName');
     res.json({
-      prompt,
+      prompt: activated,
       couple: users.map(u => ({ id: u._id, username: u.username, displayName: u.displayName })),
     });
   } catch (err) {
@@ -124,12 +132,12 @@ async function seedPrompts() {
     }
 
     await ConversationPrompt.insertMany(
-      unique.map(text => ({ promptText: text }))
+      unique.map(text => ({ promptText: text, coupleId: null }))
     );
 
     console.log(`Seeded ${unique.length} conversation prompts from text files`);
   } catch (err) {
-    console.error('Seed prompts error:', err.message);
+    console.error('Seed prompts error:', err);
   }
 }
 seedPrompts();

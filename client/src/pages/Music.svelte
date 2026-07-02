@@ -19,7 +19,9 @@
     try {
       const data = await api.get('/music');
       musicList = data.music || [];
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Music] Failed to load music:', e);
+    }
     loading = false;
   }
 
@@ -30,14 +32,18 @@
       newTitle = ''; newUrl = '';
       showAdd = false;
       await loadMusic();
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Music] Failed to add song:', e);
+    }
   }
 
   async function deleteSong(id) {
     try {
       await api.del(`/music/${id}`);
       await loadMusic();
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Music] Failed to delete song:', e);
+    }
   }
 
   function embedUrl(item) {

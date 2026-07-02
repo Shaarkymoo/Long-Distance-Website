@@ -3,13 +3,13 @@
 
   const items = [
     { page: 'movies', label: 'Movies', icon: '🎬' },
-    { page: 'music', label: 'Music', icon: '🎵' },
+    // { page: 'music', label: 'Music', icon: '🎵' },  // hidden — may restore
     { page: 'books', label: 'Books', icon: '📚' },
     { page: 'games', label: 'Games', icon: '🎮' },
     { page: 'conversations', label: 'Conversations', icon: '🎯' },
-    { page: 'predictions', label: 'Predictions', icon: '🔮' },
+    { page: 'predictions', label: 'Bet Tracker', icon: '🏆' },
     { page: 'quizzes', label: 'Quizzes', icon: '📋' },
-    { page: 'guess', label: 'Guess', icon: '🔍' },
+    // { page: 'guess', label: 'Guess', icon: '🔍' },  // hidden — may restore
     { page: 'puzzles', label: 'Puzzles', icon: '🧩' },
     { page: 'light', label: 'Light', icon: '💡' },
     { page: 'ai-adventures', label: 'AI Adventures', icon: '🤖' },

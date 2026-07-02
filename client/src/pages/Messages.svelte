@@ -11,7 +11,9 @@
     try {
       const data = await api.get('/messages');
       messages = data.messages || [];
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Messages] Failed to load messages:', e);
+    }
     loading = false;
   });
 
@@ -21,7 +23,9 @@
       const data = await api.post('/messages', { content: newContent });
       messages = [data.message, ...messages];
       newContent = '';
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Messages] Failed to post message:', e);
+    }
   }
 
   function timeAgo(date) {

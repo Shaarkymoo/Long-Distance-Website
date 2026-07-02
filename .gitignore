@@ -175,3 +175,5 @@ node_modules/
 # graphify knowledge graph outputs (regenerated on commit)
 graphify-out/
 !graphify-out/.gitkeep
+/.omo
+/.omo

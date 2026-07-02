@@ -28,6 +28,7 @@
       const data = await api.get('/ripple');
       rounds = data.rounds || [];
     } catch (e) {
+      console.error('[Ripple] Failed to load rounds:', e);
       error = 'Failed to load rounds.';
     }
     loading = false;
@@ -41,6 +42,7 @@
       newQuestion = '';
       view = 'list';
     } catch (e) {
+      console.error('[Ripple] Failed to create round:', e);
       error = 'Failed to create round.';
     }
   }
@@ -57,6 +59,7 @@
         loadRounds();
       }, 2000);
     } catch (e) {
+      console.error('[Ripple] Failed to submit answer:', e);
       error = 'Failed to submit answer.';
     }
   }
@@ -69,6 +72,7 @@
       await api.post(`/ripple/${id}/judge`);
       await loadRounds();
     } catch (e) {
+      console.error('[Ripple] Failed to judge round:', e);
       error = 'Failed to judge round.';
     }
     judgingLoading = false;

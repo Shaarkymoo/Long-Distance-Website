@@ -1,14 +1,12 @@
 import mongoose from 'mongoose';
 
-const personalityQuizSchema = new mongoose.Schema({
+const quizEntrySchema = new mongoose.Schema({
   coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
-  quizName: { type: String },
-  questions: [{
-    questionText: { type: String },
-    options: [{ type: String }],
-  }],
-  answers: { type: mongoose.Schema.Types.Mixed, default: {} },
+  quizTitle: { type: String, required: true },
+  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  myResult: { type: String, default: '' },
+  partnerResult: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model('PersonalityQuiz', personalityQuizSchema);
+export default mongoose.model('QuizEntry', quizEntrySchema);

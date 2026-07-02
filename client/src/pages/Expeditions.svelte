@@ -23,6 +23,7 @@
       const data = await api.get('/expeditions/active');
       activeExpeditions = data.expeditions || [];
     } catch (e) {
+      console.error('[Expeditions] Failed to load active expeditions:', e);
       error = 'Failed to load active expeditions';
     }
     loading = false;
@@ -35,6 +36,7 @@
       const data = await api.get('/expeditions');
       allExpeditions = data.expeditions || [];
     } catch (e) {
+      console.error('[Expeditions] Failed to load expeditions:', e);
       error = 'Failed to load expeditions';
     }
     loading = false;
@@ -55,6 +57,7 @@
       createdExpedition = data.expedition || data;
       newTitle = '';
     } catch (e) {
+      console.error('[Expeditions] Failed to create expedition:', e);
       error = 'Failed to create expedition';
     }
     creating = false;
@@ -65,14 +68,18 @@
       await api.post(`/expeditions/${id}/vote`, { vote });
       if (activeTab === 'active') await loadActive();
       else await loadAll();
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Expeditions] Failed to cast vote:', e);
+    }
   }
 
   async function markReady(id) {
     try {
       await api.post(`/expeditions/${id}/ready`);
       await loadActive();
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Expeditions] Failed to mark ready:', e);
+    }
   }
 
   function statusClass(status) {

@@ -25,6 +25,7 @@
         myThoughts = currentPrompt.thoughts[myId].text;
       }
     } catch (e) {
+      console.error('[Conversations] Failed to load current topic:', e);
       error = 'Failed to load current topic';
     }
   });
@@ -41,6 +42,7 @@
         error = data.message || 'No more prompts available!';
       }
     } catch (e) {
+      console.error('[Conversations] Failed to fetch a new prompt:', e);
       error = 'Failed to fetch a new prompt';
     }
     fetching = false;
@@ -55,6 +57,7 @@
       currentPrompt = data.prompt;
       couple = data.couple || [];
     } catch (e) {
+      console.error('[Conversations] Failed to save thoughts:', e);
       error = 'Failed to save your thoughts';
     }
     saving = false;

@@ -29,7 +29,7 @@
       ]);
       favorites = favData.favorites || [];
       userGames = gameData.games || [];
-    } catch (e) {}
+    } catch (e) { console.error('[Games] load favorites/games failed:', e); }
     loading = false;
   });
 
@@ -65,7 +65,7 @@
       } else {
         favorites = favorites.filter(f => f !== slug);
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Games] toggleFavorite failed:', e); }
   }
 
   function openLink(link) {
@@ -90,6 +90,7 @@
       formName = ''; formLink = ''; formDesc = ''; formTag = ''; formPlayers = '';
     } catch (e) {
       formError = e.message || 'Failed to add game';
+      console.error('[Games] addGame failed:', e);
     }
     adding = false;
   }
@@ -100,7 +101,7 @@
     try {
       await api.del(`/games/${slug}`);
       userGames = userGames.filter(g => g.slug !== slug);
-    } catch (e) {}
+    } catch (e) { console.error('[Games] deleteGame failed:', e); }
   }
 </script>
 

@@ -28,6 +28,7 @@
       const data = await api.get('/pet');
       pet = data.pet;
     } catch (e) {
+      console.error('[Pet] loadPet failed:', e);
       error = 'Failed to load pet';
     }
     loading = false;
@@ -52,6 +53,7 @@
       }
       interactionText = '';
     } catch (e) {
+      console.error('[Pet] handleInteract failed:', e);
       error = 'Failed to interact';
     }
     interacting = false;
@@ -68,6 +70,7 @@
         pet = data.pet;
       }
     } catch (e) {
+      console.error('[Pet] handleExplore failed:', e);
       error = 'Failed to explore';
     }
     exploring = false;
@@ -86,6 +89,7 @@
       pet = data.pet;
       renaming = false;
     } catch (e) {
+      console.error('[Pet] handleRename failed:', e);
       error = 'Failed to rename pet';
     }
   }

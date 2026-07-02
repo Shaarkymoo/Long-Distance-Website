@@ -1,289 +1,291 @@
 <script>
   import { onMount } from 'svelte';
   import api from '../lib/api.js';
+  import { currentUser } from '../lib/stores.js';
 
-  let quizzes = [];
+  let entries = [];
+  let total = 0;
+  let page = 1;
+  let totalPages = 0;
+  const limit = 20;
+  let sort = 'asc'; // asc = oldest first (default), desc = newest first
   let loading = true;
-  let currentView = 'list'; // list | create | take | compare
-  let currentQuiz = null;
-  let compareData = null;
+  let loadingMore = false;
+  let myName = 'Me';
+  let partnerName = 'Partner';
 
-  // Create form
-  let newName = '';
-  let newQuestions = [{ questionText: '', options: ['', ''] }];
-
-  // Take quiz
-  let currentResponses = [];
+  // Add / Edit state
+  let showForm = false;
+  let editingId = null;
+  let formTitle = '';
+  let formMyResult = '';
+  let formPartnerResult = '';
+  let saving = false;
 
   onMount(async () => {
-    await loadQuizzes();
+    await loadPage(1, true);
   });
 
-  async function loadQuizzes() {
-    loading = true;
+  async function loadPage(p, replace = false) {
+    if (replace) loading = true;
+    else loadingMore = true;
     try {
-      const data = await api.get('/quizzes');
-      quizzes = data.quizzes || [];
-    } catch (e) {}
+      const data = await api.get(`/quizzes?sort=${sort}&page=${p}&limit=${limit}`);
+      if (replace) {
+        entries = data.entries || [];
+      } else {
+        entries = [...entries, ...(data.entries || [])];
+      }
+      total = data.total || 0;
+      page = data.page || 1;
+      totalPages = data.totalPages || 0;
+      myName = data.myName || 'Me';
+      partnerName = data.partnerName || 'Partner';
+    } catch (e) { console.error(e); }
     loading = false;
+    loadingMore = false;
   }
 
-  function addQuestion() {
-    newQuestions = [...newQuestions, { questionText: '', options: ['', ''] }];
+  function getMyResult(entry) {
+    if (entry.addedBy === $currentUser?.id) return entry.myResult;
+    return entry.partnerResult;
   }
 
-  function removeQuestion(i) {
-    newQuestions = newQuestions.filter((_, idx) => idx !== i);
+  function getPartnerResult(entry) {
+    if (entry.addedBy === $currentUser?.id) return entry.partnerResult;
+    return entry.myResult;
   }
 
-  function addOption(qIdx) {
-    const updated = [...newQuestions];
-    updated[qIdx] = { ...updated[qIdx], options: [...updated[qIdx].options, ''] };
-    newQuestions = updated;
+  function toggleSort() {
+    sort = sort === 'asc' ? 'desc' : 'asc';
+    loadPage(1, true);
   }
 
-  function removeOption(qIdx, oIdx) {
-    const updated = [...newQuestions];
-    updated[qIdx] = { ...updated[qIdx], options: updated[qIdx].options.filter((_, i) => i !== oIdx) };
-    newQuestions = updated;
+  function loadMore() {
+    if (page < totalPages && !loadingMore) {
+      loadPage(page + 1, false);
+    }
   }
 
-  async function createQuiz() {
-    if (!newName.trim()) return;
-    const valid = newQuestions.every(q => q.questionText.trim() && q.options.every(o => o.trim()) && q.options.length >= 2);
-    if (!valid) return;
+  function openAdd() {
+    editingId = null;
+    formTitle = '';
+    formMyResult = '';
+    formPartnerResult = '';
+    showForm = true;
+  }
+
+  function openEdit(entry) {
+    editingId = entry._id;
+    formTitle = entry.quizTitle;
+    formMyResult = getMyResult(entry);
+    formPartnerResult = getPartnerResult(entry);
+    showForm = true;
+  }
+
+  function closeForm() {
+    showForm = false;
+    editingId = null;
+  }
+
+  async function saveEntry() {
+    if (!formTitle.trim()) return;
+    saving = true;
     try {
-      await api.post('/quizzes', {
-        quizName: newName.trim(),
-        questions: newQuestions.map(q => ({
-          questionText: q.questionText.trim(),
-          options: q.options.map(o => o.trim()).filter(Boolean)
-        }))
-      });
-      newName = '';
-      newQuestions = [{ questionText: '', options: ['', ''] }];
-      currentView = 'list';
-      await loadQuizzes();
-    } catch (e) {}
+      if (editingId) {
+        await api.patch(`/quizzes/${editingId}`, {
+          quizTitle: formTitle.trim(),
+          myResult: formMyResult,
+          partnerResult: formPartnerResult,
+        });
+      } else {
+        await api.post('/quizzes', {
+          quizTitle: formTitle.trim(),
+          myResult: formMyResult,
+          partnerResult: formPartnerResult,
+        });
+      }
+      closeForm();
+      await loadPage(1, true);
+    } catch (e) { console.error(e); }
+    saving = false;
   }
 
-  async function startQuiz(quiz) {
+  async function deleteEntry(id) {
+    if (!confirm('Delete this quiz entry?')) return;
     try {
-      const data = await api.get(`/quizzes/${quiz._id}`);
-      currentQuiz = data.quiz;
-      currentResponses = currentQuiz.questions.map(() => '');
-      currentView = 'take';
-    } catch (e) {}
+      await api.del(`/quizzes/${id}`);
+      await loadPage(1, true);
+    } catch (e) { console.error(e); }
   }
 
-  async function submitQuiz() {
-    try {
-      await api.post(`/quizzes/${currentQuiz._id}/answer`, { responses: currentResponses });
-      currentView = 'compare';
-      await loadCompare(currentQuiz._id);
-      await loadQuizzes();
-    } catch (e) {}
-  }
-
-  async function loadCompare(quizId) {
-    try {
-      const data = await api.get(`/quizzes/${quizId}/compare`);
-      compareData = data.compare;
-      currentView = 'compare';
-    } catch (e) {}
-  }
-
-  async function goToCompare(quiz) {
-    currentQuiz = quiz;
-    await loadCompare(quiz._id);
-  }
-
-  function statusLabel(status) {
-    const labels = { not_taken: 'Not taken', taken_by_me: 'Taken by me', taken_by_both: 'Both taken', compare_ready: 'Ready to compare' };
-    return labels[status] || status;
-  }
-
-  function statusClass(status) {
-    const classes = { not_taken: '', taken_by_me: 'taken', taken_by_both: 'both', compare_ready: 'ready' };
-    return classes[status] || '';
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 </script>
 
 <div class="quizzes-page">
-  <h1>Personality Quizzes</h1>
-  <p class="subtitle">Take quizzes and compare answers</p>
+  <!-- Header -->
+  <div class="header">
+    <h1>Quiz Log</h1>
+    <p class="subtitle">Every quiz you've taken, side by side</p>
+  </div>
 
-  {#if currentView === 'list'}
-    <button class="create-btn" on:click={() => { currentView = 'create' }}>+ Create Quiz</button>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="sort-btn" on:click={toggleSort} title="Toggle sort order">
+      {#if sort === 'asc'}
+        ↑ Oldest first
+      {:else}
+        ↓ Newest first
+      {/if}
+    </button>
+    <button class="add-btn" on:click={openAdd}>+ Add Quiz</button>
+  </div>
 
-    {#if loading}
-      <p class="loading">Loading...</p>
-    {:else if quizzes.length === 0}
-      <p class="empty">No quizzes yet. Create one to get started!</p>
-    {:else}
-      <div class="quiz-list">
-        {#each quizzes as q}
-          <div class="quiz-card {statusClass(q.status)}">
-            <div class="quiz-info">
-              <strong>{q.quizName}</strong>
-              <span class="meta">{q.questionCount} questions · <span class="badge">{statusLabel(q.status)}</span></span>
-            </div>
-            <div class="quiz-actions">
-              {#if q.status === 'not_taken'}
-                <button class="action-btn" on:click={() => startQuiz(q)}>Take Quiz</button>
-              {:else if q.status === 'taken_by_me'}
-                <button class="action-btn" on:click={() => startQuiz(q)}>Review</button>
-              {:else}
-                <button class="action-btn" on:click={() => goToCompare(q)}>Compare</button>
-              {/if}
-            </div>
-          </div>
-        {/each}
+  <!-- Empty state -->
+  {#if !loading && entries.length === 0}
+    <div class="empty-state">
+      <p>No quiz entries yet.</p>
+      <button class="add-btn big" on:click={openAdd}>+ Add Your First Quiz</button>
+    </div>
+  {/if}
+
+  <!-- Three-column grid -->
+  {#if loading}
+    <p class="loading">Loading...</p>
+  {:else if entries.length > 0}
+    <div class="grid">
+      <!-- Header row -->
+      <div class="grid-header">
+        <div class="col col-left">{myName}</div>
+        <div class="col col-center">Quiz Title</div>
+        <div class="col col-right">{partnerName}</div>
       </div>
-    {/if}
 
-  {:else if currentView === 'create'}
-    <button class="back-btn" on:click={() => { currentView = 'list' }}>← Back</button>
-    <div class="create-form">
-      <h3>Create a Quiz</h3>
-      <input bind:value={newName} placeholder="Quiz name..." class="name-input" />
-
-      {#each newQuestions as q, qi}
-        <div class="question-block">
-          <div class="q-header">
-            <strong>Question {qi + 1}</strong>
-            <button class="remove-btn" on:click={() => removeQuestion(qi)} disabled={newQuestions.length <= 1}>✕</button>
+      <!-- Data rows -->
+      {#each entries as entry}
+        <div class="grid-row">
+          <div class="col col-left">{getMyResult(entry)}</div>
+          <div class="col col-center">
+            <span class="title">{entry.quizTitle}</span>
+            <span class="date">{formatDate(entry.createdAt)}</span>
           </div>
-          <input bind:value={q.questionText} placeholder="Question text..." />
-          <div class="options-list">
-            {#each q.options as opt, oi}
-              <div class="option-row">
-                <input bind:value={opt} placeholder="Option {oi + 1}..." />
-                <button class="remove-btn small" on:click={() => removeOption(qi, oi)} disabled={q.options.length <= 2}>✕</button>
-              </div>
-            {/each}
+          <div class="col col-right">{getPartnerResult(entry)}</div>
+          <div class="row-actions">
+            <button class="icon-btn" on:click={() => openEdit(entry)} title="Edit">✎</button>
+            <button class="icon-btn" on:click={() => deleteEntry(entry._id)} title="Delete">✕</button>
           </div>
-          <button class="add-opt-btn" on:click={() => addOption(qi)}>+ Add Option</button>
         </div>
       {/each}
+    </div>
 
-      <div class="form-actions">
-        <button class="add-q-btn" on:click={addQuestion}>+ Add Question</button>
-        <button class="save-btn" on:click={createQuiz}
-          disabled={!newName.trim() || !newQuestions.every(q => q.questionText.trim() && q.options.every(o => o.trim()))}>
-          Create Quiz
+    <!-- Load more -->
+    {#if page < totalPages}
+      <div class="load-more">
+        <button on:click={loadMore} disabled={loadingMore}>
+          {loadingMore ? 'Loading...' : `Load More (${entries.length} of ${total})`}
         </button>
       </div>
-    </div>
-
-  {:else if currentView === 'take'}
-    <button class="back-btn" on:click={() => { currentView = 'list' }}>← Back</button>
-    <div class="take-quiz">
-      <h2>{currentQuiz.quizName}</h2>
-      {#each currentQuiz.questions as q, qi}
-        <div class="question-card">
-          <p class="q-text"><strong>{qi + 1}.</strong> {q.questionText}</p>
-          <div class="options">
-            {#each q.options as opt, oi}
-              <label class="option-label" class:selected={currentResponses[qi] === opt}>
-                <input type="radio" name="q{qi}" value={opt} bind:group={currentResponses[qi]} />
-                {opt}
-              </label>
-            {/each}
-          </div>
-        </div>
-      {/each}
-      <button class="submit-btn" on:click={submitQuiz}
-        disabled={currentResponses.some(r => !r)}>
-        Submit Answers
-      </button>
-    </div>
-
-  {:else if currentView === 'compare'}
-    <button class="back-btn" on:click={() => { currentView = 'list' }}>← Back</button>
-    <div class="compare-view">
-      <h2>{currentQuiz?.quizName || 'Comparison'}</h2>
-      {#if !compareData}
-        <p class="waiting">Waiting for both users to answer...</p>
-      {:else}
-        <div class="compare-table">
-          <div class="compare-header">
-            <div class="col-question">Question</div>
-            <div class="col-ans">Your Answer</div>
-            <div class="col-ans">Their Answer</div>
-          </div>
-          {#each compareData as row, i}
-            <div class="compare-row" class:match={row.user1 === row.user2}>
-              <div class="col-question"><strong>{i + 1}.</strong> {row.question}</div>
-              <div class="col-ans">{row.user1}</div>
-              <div class="col-ans">{row.user2}</div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
+    {:else if total > 0}
+      <div class="load-more done">
+        <span>Showing all {total} quizzes</span>
+      </div>
+    {/if}
   {/if}
 </div>
 
+<!-- Add / Edit modal -->
+{#if showForm}
+  <div class="modal-overlay" on:click={closeForm}>
+    <div class="modal" on:click|stopPropagation>
+      <h3>{editingId ? 'Edit Quiz Entry' : 'Add Quiz Entry'}</h3>
+      <div class="form">
+        <label>
+          Quiz Title <span class="req">*</span>
+          <input bind:value={formTitle} placeholder="e.g. Which HP House Are You?" />
+        </label>
+        <label>
+          My Result
+          <textarea bind:value={formMyResult} placeholder="What did you get?" rows="3"></textarea>
+        </label>
+        <label>
+          {partnerName}'s Result
+          <textarea bind:value={formPartnerResult} placeholder="What did they get?" rows="3"></textarea>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" on:click={closeForm}>Cancel</button>
+        <button class="save-btn" on:click={saveEntry} disabled={!formTitle.trim() || saving}>
+          {saving ? 'Saving...' : editingId ? 'Update' : 'Add Entry'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
-  .quizzes-page { max-width: 700px; margin: 0 auto; padding: 40px 24px; }
-  h1 { font-size: 1.8rem; color: var(--text-primary); }
-  .subtitle { color: var(--text-secondary); margin-top: 0; margin-bottom: 1rem; }
-  .loading, .empty { color: var(--text-secondary); text-align: center; padding: 2rem; }
-  .back-btn { background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; margin-bottom: 1rem; }
-  .back-btn:hover { background: var(--bg-elevated); }
-  .create-btn { padding: 0.5rem 1rem; background: var(--bg-surface); color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 1rem; }
-  .create-btn:hover { background: var(--bg-surface); }
+  .quizzes-page { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
 
-  .quiz-list { display: flex; flex-direction: column; gap: 0.4rem; }
-  .quiz-card { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 0.8rem 1rem; border-radius: 6px; border-left: 3px solid var(--border-color); }
-  .quiz-card.taken { border-left-color: #4caf50; }
-  .quiz-card.both { border-left-color: #2196f3; }
-  .quiz-card.ready { border-left-color: #ff9800; }
-  .quiz-info { display: flex; flex-direction: column; gap: 0.2rem; }
-  .meta { font-size: 0.8rem; color: var(--text-secondary); }
-  .badge { font-weight: 600; color: var(--text-secondary); }
-  .action-btn { padding: 0.4rem 0.8rem; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
-  .action-btn:hover { background: var(--accent-hover); }
+  .header h1 { font-size: 1.8rem; color: var(--text-primary); margin-bottom: 0; }
+  .subtitle { color: var(--text-secondary); margin-top: 0.3rem; margin-bottom: 1.5rem; }
 
-  .create-form { background: var(--bg-card); padding: 1.5rem; border-radius: 8px; }
-  .create-form h3 { margin: 0 0 1rem 0; }
-  .name-input { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 1rem; box-sizing: border-box; }
-  .question-block { background: var(--bg-elevated); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-  .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-  .q-header input { flex: 1; margin-left: 0.5rem; }
-  .remove-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 1rem; }
-  .remove-btn:disabled { color: var(--text-secondary); }
-  .remove-btn.small { font-size: 0.8rem; }
-  .question-block input[type="text"] { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 0.4rem; box-sizing: border-box; }
-  .options-list { margin: 0.5rem 0; }
-  .option-row { display: flex; gap: 0.3rem; align-items: center; }
-  .option-row input { flex: 1; }
-  .add-opt-btn, .add-q-btn { background: none; border: 1px dashed var(--border-color); color: var(--text-secondary); padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
-  .add-opt-btn:hover, .add-q-btn:hover { background: var(--bg-elevated); }
-  .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
-  .save-btn { padding: 0.5rem 1.2rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  .save-btn:disabled { background: var(--text-secondary); }
+  /* Toolbar */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .sort-btn { background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+  .sort-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+  .add-btn { padding: 0.5rem 1rem; background: var(--bg-surface); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .add-btn:hover { filter: brightness(1.15); }
+  .add-btn.big { padding: 0.8rem 1.5rem; font-size: 1rem; }
 
-  .take-quiz { background: var(--bg-card); padding: 1.5rem; border-radius: 8px; }
-  .take-quiz h2 { margin: 0 0 1rem 0; }
-  .question-card { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-  .q-text { margin: 0 0 0.5rem 0; }
-  .options { display: flex; flex-direction: column; gap: 0.3rem; }
-  .option-label { display: block; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; }
-  .option-label:hover { background: var(--bg-elevated); }
-  .option-label.selected { background: #e3f2fd; border-color: #2196f3; }
-  .option-label input { margin-right: 0.5rem; }
-  .submit-btn { padding: 0.6rem 1.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
-  .submit-btn:disabled { background: var(--text-secondary); }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+  .empty-state p { margin-bottom: 1rem; }
+  .loading { color: var(--text-secondary); text-align: center; padding: 2rem; }
 
-  .compare-view { background: var(--bg-card); padding: 1.5rem; border-radius: 8px; }
-  .compare-view h2 { margin: 0 0 1rem 0; }
-  .waiting { color: #ff9800; text-align: center; padding: 2rem; }
-  .compare-table { font-size: 0.9rem; }
-  .compare-header { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; font-weight: 600; color: var(--text-secondary); padding: 0.5rem; border-bottom: 2px solid var(--border-color); }
-  .compare-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; padding: 0.5rem; border-bottom: 1px solid var(--border-color); }
-  .compare-row.match { background: #e8f5e9; }
-  .col-question { color: var(--text-primary); }
-  .col-ans { color: var(--text-secondary); }
+  /* Grid */
+  .grid { display: flex; flex-direction: column; }
+  .grid-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; border-bottom: 2px solid var(--border-color); padding: 0 2.5rem 0.5rem 0; }
+  .grid-header .col { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+  .grid-header .col-left { text-align: left; }
+  .grid-header .col-center { text-align: center; min-width: 140px; }
+  .grid-header .col-right { text-align: right; }
+
+  .grid-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; padding: 1rem 2.5rem 1rem 0; border-bottom: 1px solid var(--border-color); position: relative; align-items: start; }
+  .grid-row:hover { background: var(--bg-elevated); }
+  .grid-row:hover .row-actions { opacity: 1; }
+
+  .col { font-size: 0.92rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .col-center { text-align: center; min-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .col-left { text-align: left; padding-right: 1rem; }
+  .col-right { text-align: right; padding-left: 1rem; }
+
+  .title { font-weight: 600; font-size: 0.95rem; }
+  .date { font-size: 0.75rem; color: var(--text-disabled); white-space: nowrap; }
+
+  .row-actions { position: absolute; right: 0; top: 0.5rem; display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; }
+  .icon-btn { background: none; border: none; cursor: pointer; padding: 0.2rem 0.35rem; border-radius: 4px; color: var(--text-secondary); font-size: 0.9rem; }
+  .icon-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+
+  /* Load more */
+  .load-more { text-align: center; padding: 1.5rem; }
+  .load-more button { padding: 0.5rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; }
+  .load-more button:hover:not(:disabled) { background: var(--bg-elevated); color: var(--text-primary); }
+  .load-more button:disabled { opacity: 0.5; cursor: default; }
+  .load-more.done span { font-size: 0.85rem; color: var(--text-disabled); }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .modal { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 1rem; }
+  .form { display: flex; flex-direction: column; gap: 0.8rem; }
+  .form label { font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.3rem; }
+  .form input, .form textarea { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-main); color: var(--text-primary); font-size: 0.9rem; font-family: inherit; }
+  .form textarea { resize: vertical; }
+  .req { color: var(--accent); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.2rem; }
+  .cancel-btn { padding: 0.5rem 1rem; background: none; border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .save-btn { padding: 0.5rem 1.2rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; }
+  .save-btn:disabled { opacity: 0.5; cursor: default; }
+  .save-btn:hover:not(:disabled) { filter: brightness(1.15); }
 </style>

@@ -79,7 +79,7 @@ async function seedChallenges() {
       console.log('Seeded challenges');
     }
   } catch (err) {
-    console.error('Seed challenges error:', err.message);
+    console.error('Seed challenges error:', err);
   }
 }
 seedChallenges();

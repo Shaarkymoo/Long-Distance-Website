@@ -24,17 +24,13 @@ async function resetDatabase() {
     console.log(`  - ${col.name}`);
   }
 
-  console.log('\nDropping all collections...');
+  console.log('\nClearing all documents from collections...');
   for (const col of collections) {
-    await db.dropCollection(col.name);
-    console.log(`  ✓ Dropped ${col.name}`);
+    const result = await db.collection(col.name).deleteMany({});
+    console.log(`  ✓ Cleared ${result.deletedCount} docs from ${col.name}`);
   }
 
-  // Drop the couple-website database itself to ensure clean state
-  await db.dropDatabase();
-  console.log('\n  ✓ Dropped database (couple-website)');
-
-  console.log('\nDatabase reset complete. All collections removed — ready for a fresh start.');
+  console.log('\nDatabase reset complete. All documents removed — collections and indexes preserved.');
   await mongoose.disconnect();
   console.log('Disconnected.');
 }

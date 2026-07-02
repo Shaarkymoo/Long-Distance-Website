@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 
-const predictionSchema = new mongoose.Schema({
+const betSchema = new mongoose.Schema({
   coupleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Couple', index: true },
-  title: { type: String },
-  predictedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  result: { type: String, enum: ['pending', 'correct', 'wrong'], default: 'pending' },
+  challenger: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  challenged: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  goal: { type: String, required: true },
+  points: { type: Number, default: 1 },
+  winner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   createdAt: { type: Date, default: Date.now },
   resolvedAt: { type: Date },
 });
 
-export default mongoose.model('Prediction', predictionSchema);
+export default mongoose.model('Bet', betSchema);

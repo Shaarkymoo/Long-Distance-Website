@@ -31,7 +31,7 @@
       ]);
       questions = qData.questions || [];
       leaderboard = lData.leaderboard || [];
-    } catch (e) {}
+    } catch (e) { console.error('[Trivia] loadData failed:', e); }
     loading = false;
   }
 
@@ -47,7 +47,7 @@
       newQuestion = ''; newOptions = ['', '', '', '']; newCorrect = ''; newCategory = 'general';
       showCreate = false;
       await loadData();
-    } catch (e) {}
+    } catch (e) { console.error('[Trivia] createQuestion failed:', e); }
   }
 
   async function submitAnswer() {
@@ -61,7 +61,7 @@
         selectedAnswer = '';
         loadData();
       }, 2000);
-    } catch (e) {}
+    } catch (e) { console.error('[Trivia] submitAnswer failed:', e); }
   }
 
   function statusLabel(q) {

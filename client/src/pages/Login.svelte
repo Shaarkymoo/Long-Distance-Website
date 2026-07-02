@@ -27,6 +27,7 @@
         mode = 'setup';
       }
     } catch (e) {
+      console.error('[Login] onMount failed:', e);
       // If server is down, default to login
     }
     checking = false;
@@ -51,7 +52,8 @@
       const data = await res.json();
       localStorage.setItem('token', data.token);
       currentUser.set(data.user);
-    } catch {
+    } catch (e) {
+      console.error('[Login] handleLogin failed:', e);
       loginError = 'Connection error';
     }
     loggingIn = false;
@@ -104,7 +106,8 @@
       setupUsername2 = '';
       setupPassword = '';
       setupConfirm = '';
-    } catch {
+    } catch (e) {
+      console.error('[Login] handleSetup failed:', e);
       setupError = 'Connection error';
     }
     settingUp = false;

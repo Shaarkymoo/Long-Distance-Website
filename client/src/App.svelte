@@ -28,7 +28,7 @@
   import PageHelp from './components/PageHelp.svelte';
 
   let currentPage = 'home';
-  const pageMap = { home: Home, notebook: Notebook, light: Light, movies: Movies, messages: Messages, conversations: Conversations, challenges: Challenges, predictions: Predictions, quizzes: Quizzes, games: Games, trivia: Trivia, guess: GuessObject, puzzles: DailyPuzzles, music: Music, books: Books, whiteboard: Whiteboard, 'ai-adventures': AiAdventures, 'ai-adventures/new': AiAdventures, pet: Pet, archive: Archive, ripple: Ripple, expeditions: Expeditions };
+  const pageMap = { home: Home, notebook: Notebook, light: Light, movies: Movies, messages: Messages, conversations: Conversations, challenges: Challenges, predictions: Predictions, quizzes: Quizzes, games: Games, trivia: Trivia, /* guess: GuessObject, */ puzzles: DailyPuzzles, /* music: Music, */ books: Books, whiteboard: Whiteboard, 'ai-adventures': AiAdventures, 'ai-adventures/new': AiAdventures, pet: Pet, archive: Archive, ripple: Ripple, expeditions: Expeditions };
 
   function navigate(page) {
     if (page === 'home') {
@@ -56,7 +56,8 @@
       try {
         const data = await api.get('/auth/me');
         currentUser.set(data.user);
-      } catch {
+      } catch (e) {
+        console.error('[App] auth/me failed:', e);
         localStorage.removeItem('token');
       }
     }

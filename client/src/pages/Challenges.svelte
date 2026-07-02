@@ -11,7 +11,7 @@
       const data = await api.get('/challenges/random');
       currentChallenge = data.challenge;
       message = data.message || '';
-    } catch (e) {}
+    } catch (e) { console.error('[Challenges] getChallenge failed:', e); }
   }
 
   async function addChallenge() {
@@ -19,7 +19,7 @@
     try {
       await api.post('/challenges', { challengeText: newText, category: newCategory });
       newText = '';
-    } catch (e) {}
+    } catch (e) { console.error('[Challenges] addChallenge failed:', e); }
   }
 
   async function resetChallenges() {
@@ -27,7 +27,7 @@
       await api.get('/challenges/reset');
       currentChallenge = null;
       message = 'All challenges have been reset!';
-    } catch (e) {}
+    } catch (e) { console.error('[Challenges] resetChallenges failed:', e); }
   }
 
   function catColor(cat) {

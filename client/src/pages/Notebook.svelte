@@ -8,10 +8,13 @@
     try {
       const data = await api.get('/notebook');
       content = data.content || '';
-    } catch {}
+        } catch (e) {
+      console.error('[Notebook] Failed to load notebook:', e);
+    }
   });
 
-  async function handleSave() {
+  async function handleSave()
+ {
     await api.put('/notebook', { content });
     saved = true;
     setTimeout(() => saved = false, 2000);

@@ -33,6 +33,7 @@
         counterpart = null;
       }
     } catch (e) {
+      console.error('[Books] loadBook failed:', e);
       error = 'Failed to load book';
     }
     loading = false;
@@ -50,6 +51,7 @@
       // Save progress (fire-and-forget)
       api.put('/books/progress', { currentPage }).catch(() => {});
     } catch (e) {
+      console.error('[Books] loadPage failed:', e);
       pageContent = '';
       error = 'Failed to load page';
     }
@@ -94,6 +96,7 @@
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       await loadBook();
     } catch (e) {
+      console.error('[Books] handleUpload failed:', e);
       error = e.message;
     }
     uploading = false;
@@ -110,6 +113,7 @@
       pageContent = '';
       error = '';
     } catch (e) {
+      console.error('[Books] handleDelete failed:', e);
       error = 'Failed to delete book';
     }
   }
