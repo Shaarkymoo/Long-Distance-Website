@@ -1,7 +1,7 @@
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 /**
- * Call Gemini 1.5 Flash API.
+ * Call Gemini 2.5 Flash API.
  * @param {Object} opts
  * @param {string} opts.systemPrompt - The system/persona prompt
  * @param {Array<{author: string, content: string}>} opts.history - Messages to send
@@ -14,11 +14,8 @@ export async function callGemini({ systemPrompt, history, maxOutputTokens = 1200
     return { text: null, usage: {}, error: 'GEMINI_API_KEY not set in .env' };
   }
 
-  // Build contents array: system prompt as first user message + model acknowledgment
-  const contents = [
-    { role: 'user', parts: [{ text: systemPrompt }] },
-    { role: 'model', parts: [{ text: 'Understood. I will play this role.' }] },
-  ];
+  // Build contents array from history
+  const contents = [];
 
   // Map history: user1/user2 -> user, ai -> model
   for (const msg of history) {
@@ -33,6 +30,9 @@ export async function callGemini({ systemPrompt, history, maxOutputTokens = 1200
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemPrompt }],
+        },
         contents,
         generationConfig: {
           maxOutputTokens,
