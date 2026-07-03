@@ -1,7 +1,14 @@
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+import { VertexAI } from '@google-cloud/vertexai';
+
+const vertexAI = new VertexAI({
+  project: process.env.GCP_PROJECT,
+  location: 'asia-south1',
+});
+
+const model = vertexAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 /**
- * Call Gemini 2.5 Flash API.
+ * Call Gemini 2.5 Flash via Vertex AI.
  * @param {Object} opts
  * @param {string} opts.systemPrompt - The system/persona prompt
  * @param {Array<{author: string, content: string}>} opts.history - Messages to send
@@ -9,11 +16,6 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/
  * @returns {Promise<{text: string|null, usage: object, error: string|null}>}
  */
 export async function callGemini({ systemPrompt, history, maxOutputTokens = 1200 }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return { text: null, usage: {}, error: 'GEMINI_API_KEY not set in .env' };
-  }
-
   // Build contents array from history
   const contents = [];
 
@@ -26,32 +28,22 @@ export async function callGemini({ systemPrompt, history, maxOutputTokens = 1200
   }
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        contents,
-        generationConfig: {
-          maxOutputTokens,
-          temperature: 0.9,
-        },
-      }),
+    const result = await model.generateContent({
+      contents,
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      generationConfig: {
+        maxOutputTokens,
+        temperature: 0.9,
+      },
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return { text: null, usage: {}, error: `Gemini API error ${response.status}: ${errText}` };
-    }
+    const candidate = result.response?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text || null;
 
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    const usage = data?.usageMetadata || {};
-
-    return { text, usage, error: null };
+    return { text, usage: {}, error: null };
   } catch (err) {
-    return { text: null, usage: {}, error: `Network error: ${err.message}` };
+    return { text: null, usage: {}, error: `Vertex AI error: ${err.message}` };
   }
 }

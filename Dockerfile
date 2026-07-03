@@ -21,4 +21,5 @@ COPY --from=server-builder /app/server/node_modules ./server/node_modules
 COPY --from=client-builder /app/client/dist ./client/dist
 EXPOSE 8080
 ENV PORT=8080
+ENV GCP_PROJECT=long-distanced-website
 CMD ["node", "server/index.js"]

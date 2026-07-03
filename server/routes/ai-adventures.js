@@ -132,17 +132,15 @@ router.post('/:id/act', async (req, res) => {
     });
 
     if (result.error) {
-      console.error('[AiAdventures] Gemini error:', result.error);
+      console.error('[AiAdventures] Vertex AI error:', result.error);
       // Map known errors to user-friendly messages
       let message;
-      if (result.error.includes('GEMINI_API_KEY not set')) {
-        message = 'AI service is not configured. The GEMINI_API_KEY environment variable is missing.';
-      } else if (result.error.includes('Network error')) {
-        message = 'Could not reach the AI service. Please check your internet connection.';
-      } else if (result.error.includes('API key')) {
-        message = 'The AI service API key is invalid or expired.';
+      if (result.error.includes('PERMISSION_DENIED') || result.error.includes('403')) {
+        message = 'AI service is not configured. The Cloud Run service account needs the Vertex AI User role.';
       } else if (result.error.includes('SAFETY') || result.error.includes('blocked')) {
         message = 'The AI response was blocked by safety filters. Try rephrasing your message.';
+      } else if (result.error.includes('RESOURCE_EXHAUSTED')) {
+        message = 'AI service quota exceeded. Please try again later.';
       } else {
         message = 'The AI service returned an error. Please try again later.';
       }
