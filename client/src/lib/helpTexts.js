@@ -8,7 +8,6 @@ const helpTexts = {
   conversations: "Browse conversation starters and prompts for deeper talks.",
   predictions: "Make predictions about your relationship and see who was right.",
   quizzes: "Create and take quizzes about each other.",
-  guess: "Play a guessing game \u2014 describe something and see if they can guess it.",
   puzzles: "Daily puzzles and brain teasers to solve together.",
   light: "Control a smart LED light (WLED) from here.",
   'ai-adventures': "Go on AI-powered interactive story adventures together.",

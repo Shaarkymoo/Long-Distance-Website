@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Pet from '../models/Pet.js';
+import User from '../models/User.js';
 import ArchiveEntry from '../models/ArchiveEntry.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { callGemini } from '../services/gemini.js';
@@ -82,24 +83,52 @@ router.post('/interact', async (req, res) => {
       return res.status(404).json({ error: 'No pet found. Create one first.' });
     }
 
+    const userName = req.user.displayName || req.user.username;
+    const currentUserId = req.user.id.toString();
+
+    // Find the other user to reference them by name
+    const otherUser = await User.findOne({ coupleId: req.user.coupleId, _id: { $ne: req.user.id } });
+    const otherName = otherUser?.displayName || otherUser?.username || 'the other';
+    const otherUserId = otherUser?._id?.toString();
+
+    // Build mood context from stored per-user moods
+    const myMood = pet.moods?.get(currentUserId) || 'neutral and friendly';
+    const otherMood = (otherUserId && pet.moods?.get(otherUserId)) || 'neutral and friendly';
+
     const systemPrompt = [
       `You are ${pet.name || 'the pet'}, a virtual pet for a couple in a long-distance relationship.`,
       `Personality: ${pet.personality}`,
       `Level: ${pet.level}`,
       `Traits: ${pet.traits.join(', ') || 'none yet'}`,
       `Current Location: ${pet.currentLocation}`,
+      pet.lifeSummary ? `Life Summary: ${pet.lifeSummary}` : null,
       ``,
-      `Respond to the user's action in character as the pet. Keep responses to 1-2 sentences. Be warm, playful, and affectionate.`,
-    ].join('\n');
+      `The person interacting with you now is ${userName}.`,
+      `Your current feelings:`,
+      `- Toward ${userName}: ${myMood}`,
+      `- Toward ${otherName}: ${otherMood}`,
+      ``,
+      `Your mood determines how you respond. If you're happy with someone, be warm. If you're upset, be cold or dramatic. Let your history with each user shape your reactions naturally.`,
+      `Keep responses to 1-2 sentences. Be warm, playful, and affectionate (or not, depending on your mood).`,
+      ``,
+      `At the end of your response, on separate lines, add tags describing your updated feelings:`,
+      `[MOOD user=${userName}] <how you feel about ${userName} right now>`,
+      `[MOOD user=${otherName}] <how you feel about ${otherName} right now>`,
+      `These tags save your emotional state for next time. Be consistent with what just happened.`,
+    ].filter(Boolean).join('\n');
 
-    const recentHistory = pet.recentInteractions.slice(-5).map(i => ({
-      author: 'user',
-      content: i.action,
-    }));
+    // Build conversation history: past interactions (action + response) + current action
+    const history = [
+      ...pet.recentInteractions.slice(-5).flatMap(i => [
+        { author: 'user', content: i.action },
+        { author: 'ai', content: i.response },
+      ]),
+      { author: 'user', content: action.trim() },
+    ];
 
     const result = await callGemini({
       systemPrompt,
-      history: recentHistory,
+      history,
       maxOutputTokens: 300,
     });
 
@@ -107,7 +136,30 @@ router.post('/interact', async (req, res) => {
       return res.status(502).json({ error: result.error });
     }
 
-    const response = result.text;
+    const rawResponse = result.text;
+
+    // Parse [MOOD user=X] tags from response and persist to pet.moods
+    let hasMoodUpdate = false;
+    for (const line of rawResponse.split('\n')) {
+      const match = line.match(/\[MOOD user=([^\]]+)\]\s*(.+)/);
+      if (match) {
+        const moodUserName = match[1].trim();
+        const moodText = match[2].trim();
+        if (moodUserName === userName) {
+          pet.moods.set(currentUserId, moodText);
+          hasMoodUpdate = true;
+        } else if (otherUserId && moodUserName === otherName) {
+          pet.moods.set(otherUserId, moodText);
+          hasMoodUpdate = true;
+        }
+      }
+    }
+    if (hasMoodUpdate) {
+      pet.markModified('moods');
+    }
+
+    // Strip mood tags for clean display and history
+    const response = rawResponse.replace(/\[MOOD user=[^\]]+\]\s*.+/g, '').trim();
 
     pet.recentInteractions.push({
       userId: req.user.id,

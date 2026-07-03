@@ -15,7 +15,6 @@
   import Quizzes from './pages/Quizzes.svelte';
   import Games from './pages/Games.svelte';
   import Trivia from './pages/Trivia.svelte';
-  import GuessObject from './pages/GuessObject.svelte';
   import DailyPuzzles from './pages/DailyPuzzles.svelte';
   import Music from './pages/Music.svelte';
   import Books from './pages/Books.svelte';
@@ -28,7 +27,7 @@
   import PageHelp from './components/PageHelp.svelte';
 
   let currentPage = 'home';
-  const pageMap = { home: Home, notebook: Notebook, light: Light, movies: Movies, messages: Messages, conversations: Conversations, challenges: Challenges, predictions: Predictions, quizzes: Quizzes, games: Games, trivia: Trivia, /* guess: GuessObject, */ puzzles: DailyPuzzles, /* music: Music, */ books: Books, whiteboard: Whiteboard, 'ai-adventures': AiAdventures, 'ai-adventures/new': AiAdventures, pet: Pet, archive: Archive, ripple: Ripple, expeditions: Expeditions };
+  const pageMap = { home: Home, notebook: Notebook, light: Light, movies: Movies, messages: Messages, conversations: Conversations, challenges: Challenges, predictions: Predictions, quizzes: Quizzes, games: Games, trivia: Trivia, puzzles: DailyPuzzles, /* music: Music, */ books: Books, whiteboard: Whiteboard, 'ai-adventures': AiAdventures, 'ai-adventures/new': AiAdventures, pet: Pet, archive: Archive, ripple: Ripple, expeditions: Expeditions };
 
   function navigate(page) {
     if (page === 'home') {

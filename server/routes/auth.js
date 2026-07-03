@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Couple from '../models/Couple.js';
@@ -47,9 +48,11 @@ router.post('/setup', async (req, res) => {
       name: `${username1.trim()} & ${username2.trim()}`,
     });
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const users = await User.insertMany([
-      { username: username1.trim(), password: password, displayName: username1.trim(), coupleId: couple._id },
-      { username: username2.trim(), password: password, displayName: username2.trim(), coupleId: couple._id },
+      { username: username1.trim(), password: hashedPassword, displayName: username1.trim(), coupleId: couple._id },
+      { username: username2.trim(), password: hashedPassword, displayName: username2.trim(), coupleId: couple._id },
     ]);
 
     res.json({
@@ -76,8 +79,9 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Plain text comparison
-    if (password !== user.password) {
+    // Compare against hashed password
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

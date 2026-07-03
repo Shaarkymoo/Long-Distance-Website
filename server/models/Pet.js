@@ -18,6 +18,11 @@ const petSchema = new mongoose.Schema({
   currentLocation: { type: String, default: 'The Cozy Home' },
   locationsUnlocked: [{ type: String }],
   lifeSummary: { type: String, default: '' },
+  moods: {
+    type: Map,
+    of: String,
+    default: {},
+  },
   totalInteractions: { type: Number, default: 0 },
   recentInteractions: {
     type: [interactionSchema],

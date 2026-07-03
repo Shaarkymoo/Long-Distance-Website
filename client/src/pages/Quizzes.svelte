@@ -198,7 +198,9 @@
 
 <!-- Add / Edit modal -->
 {#if showForm}
-  <div class="modal-overlay" on:click={closeForm}>
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions a11y-no-noninteractive-element-interactions -->
+  <div class="modal-overlay" on:click={closeForm} role="dialog">
+    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div class="modal" on:click|stopPropagation>
       <h3>{editingId ? 'Edit Quiz Entry' : 'Add Quiz Entry'}</h3>
       <div class="form">

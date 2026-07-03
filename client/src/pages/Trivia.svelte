@@ -93,8 +93,8 @@
         {/each}
       </div>
       <div class="correct-row">
-        <label>Correct answer:</label>
-        <select bind:value={newCorrect}>
+        <label for="correct-answer">Correct answer:</label>
+        <select id="correct-answer" bind:value={newCorrect}>
           <option value="">-- Select --</option>
           {#each newOptions.filter(o => o.trim()) as opt}
             <option value={opt}>{opt}</option>

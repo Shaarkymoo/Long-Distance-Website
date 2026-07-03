@@ -9,7 +9,6 @@
     { page: 'conversations', label: 'Conversations', icon: '🎯' },
     { page: 'predictions', label: 'Bet Tracker', icon: '🏆' },
     { page: 'quizzes', label: 'Quizzes', icon: '📋' },
-    // { page: 'guess', label: 'Guess', icon: '🔍' },  // hidden — may restore
     { page: 'puzzles', label: 'Puzzles', icon: '🧩' },
     { page: 'light', label: 'Light', icon: '💡' },
     { page: 'ai-adventures', label: 'AI Adventures', icon: '🤖' },
