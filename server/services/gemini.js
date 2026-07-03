@@ -27,6 +27,14 @@ export async function callGemini({ systemPrompt, history, maxOutputTokens = 1200
     });
   }
 
+  // Vertex AI requires at least one message in contents
+  if (contents.length === 0) {
+    contents.push({
+      role: 'user',
+      parts: [{ text: 'Begin.' }],
+    });
+  }
+
   try {
     const result = await model.generateContent({
       contents,

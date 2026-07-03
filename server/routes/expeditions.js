@@ -66,7 +66,10 @@ router.post('/', async (req, res) => {
       expiresAt,
     });
 
-    res.status(201).json({ expedition });
+    // Populate createdBy so the client has displayName
+    const populated = await expedition.populate('createdBy', 'displayName username');
+
+    res.status(201).json({ expedition: populated });
   } catch (err) {
     console.error('Create expedition error:', err);
     res.status(500).json({ error: 'Server error' });

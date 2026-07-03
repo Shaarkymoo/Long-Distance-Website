@@ -12,7 +12,11 @@ async function request(method, path, body) {
     window.location.reload();
     throw new Error('Unauthorized');
   }
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  return data;
 }
 
 export default {
